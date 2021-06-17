@@ -1,0 +1,59 @@
+----> HE notify if systems not responding (device & reason[s]) Use influx
+        monitoring db? Kapacitor has  publish to Mqtt (amoung others)
+      1. Check if Pi4 running and MQTT running (pings?). 
+        Do this from HE. Notify cell phone. 
+      2. Check if Linux and mini systems are running (influx/kapacitor)
+        send status to mqtt. HE will read topic, Notify cell...
+----> use grafana/influxdb for device 'health' monitoring and notification?
+      - Kodi needs influx collector.
+      
+~/Projects/iot/alerts/mqtt-netbase.py, mqtt-netbase.groovy 
+
+1. Base Level: Bronco up, pi4 up, mqtt up, hubitat up.
+  Settings
+    "every_seconds": 120
+    "ping_list":["192.168.1.2", "192.168.1.5", "192.168.1.7"]
+    "hubitat": "192.168.1.5"
+    "mqtt_ip": "192.168.1.7"
+    "mqtt_root": "homie/network"
+    "mqtt_base": "status/basic"     # is a property, root+base/set
+    "mqtt_tb" "status/tb"           # is a property so + /set
+  Script runs on brono. duplicate runs on pi4.
+      connect to mqtt. 
+      set on_message handler for f"{mqtt_root}/{mqtt_base}/cmd"
+      forever: :
+        foreach settings.ping_list ping, collect ip# and ping status.
+        write ping status[s] to f"{mqtt_root}/{mqtt_base}/set" payload: {"up": ["ip", ...]}
+        set 30 sec timer
+        wait(settings.every_seconds)
+      on_message: 
+        if payload == "{"ack": true}, cancel timer
+      if tmo fires
+        attempt email.
+        set an mqtt topic? http post to hubitat?
+        
+  Hubitat - cjcnet.groovy driver listens to {mqtt_root}/{mqtt_base}/set
+  
+     when {"up": [] } arrives, 
+      if up.list.length=3 
+        send "{"ack": true}
+        set virt_contact to closed
+      else
+        set virt_contact to open
+        
+      HSM listens for the virt_contact 
+      
+2. All nodes ping and/or all telegrafs are sending. 
+    https://www.influxdata.com/influxdb-templates/telegraf-monitor/
+
+3. TrumpyBear is alive
+    want an send/rcv interaction
+
+4. MqttCameras are happy
+    want an send/rcv interaction
+
+5. Warnings if load average is too high.
+
+
+      
+
